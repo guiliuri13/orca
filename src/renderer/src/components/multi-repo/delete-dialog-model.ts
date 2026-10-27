@@ -49,7 +49,8 @@ function toRow(member: MultiRepoDeleteMemberInspection, labels: DeleteMemberLabe
     risky:
       member.dirtyCount === null ||
       member.dirtyCount > 0 ||
-      (member.unpublishedCommitCount ?? 0) > 0,
+      member.unpublishedCommitCount === null ||
+      member.unpublishedCommitCount > 0,
     worktreeGone: !member.worktreeExists,
     branchKept: member.willKeepBranch,
     phase: 'idle',

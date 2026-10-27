@@ -67,6 +67,29 @@ describe('buildDeleteRows', () => {
     expect(rows[1].branchKept).toBeNull()
   })
 
+  it('keeps a member risky when only the unpublished-commit check failed', () => {
+    const [row] = buildDeleteRows(
+      {
+        ...inspection,
+        members: [
+          {
+            memberId: 'd',
+            repoId: 'repo-d',
+            state: 'ready',
+            worktreeId: 'wt-d',
+            worktreeExists: true,
+            dirtyCount: 0,
+            unpublishedCommitCount: null,
+            willKeepBranch: true
+          }
+        ]
+      },
+      labels
+    )
+    expect(row.risky).toBe(true)
+    expect(enterConfirmsDelete([row])).toBe(false)
+  })
+
   it('lets Enter confirm only a workspace with nothing at risk', () => {
     expect(enterConfirmsDelete(buildDeleteRows(inspection, labels))).toBe(false)
     expect(enterConfirmsDelete(buildDeleteRows(inspection, labels).filter((r) => !r.risky))).toBe(
