@@ -1,6 +1,6 @@
 import type { Section } from '../worktree/workspace-list-types'
 
-/** Moves the system Workspaces sections to the top of their host block and drops empty ones. */
+/** Moves the system Workspaces sections to the top of their host block and drops empty ones. A collapsed section has no rows but keeps its count, so it stays expandable. */
 export function hoistMultiRepoWorkspaceSections(
   sections: readonly Section[],
   workspaceSectionKeys: ReadonlySet<string>,
@@ -23,7 +23,7 @@ export function hoistMultiRepoWorkspaceSections(
       result.push(section)
       continue
     }
-    if (section.data.length === 0 && !section.pendingCreations?.length) {
+    if (section.data.length === 0 && !section.pendingCreations?.length && !section.count) {
       continue
     }
     result.splice(blockStart + hoisted, 0, section)
