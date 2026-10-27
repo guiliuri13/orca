@@ -52,7 +52,10 @@ export function activateWorkspaceRepoEntry(
   workspaceKey: string,
   folderWorkspace: FolderWorkspace
 ): void {
-  const executionHostId = folderWorkspace.multiRepo?.executionHostId
+  // Adoption stamps the runtime host on the folder workspace; multiRepo.executionHostId keeps the
+  // id the owning host wrote about itself ('local'), which activation cannot qualify against.
+  const executionHostId =
+    folderWorkspace.executionHostId ?? folderWorkspace.multiRepo?.executionHostId
   activateAndRevealWorkspace(workspaceKey, {
     navigationIntent: 'user-open',
     ...(executionHostId ? { executionHostId } : {})

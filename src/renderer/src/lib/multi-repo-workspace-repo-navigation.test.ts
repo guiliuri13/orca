@@ -5,7 +5,9 @@ import type { MultiRepoMember } from '../../../shared/multi-repo-workspace'
 vi.mock('@/store', () => ({ useAppStore: { getState: () => ({}) } }))
 vi.mock('@/lib/worktree-activation', () => ({ activateAndRevealWorkspace: vi.fn() }))
 
-const { resolveWorkspaceRepoTarget } = await import('./multi-repo-workspace-repo-navigation')
+const { activateWorkspaceRepoEntry, resolveWorkspaceRepoTarget } =
+  await import('./multi-repo-workspace-repo-navigation')
+const { activateAndRevealWorkspace } = await import('@/lib/worktree-activation')
 
 function member(id: string, state: MultiRepoMember['state']): MultiRepoMember {
   return {
@@ -62,5 +64,27 @@ describe('resolveWorkspaceRepoTarget', () => {
   it('does nothing outside a multi-repo workspace', () => {
     expect(resolve('wt-other', { kind: 'next' })).toBeUndefined()
     expect(resolve(null, { kind: 'next' })).toBeUndefined()
+  })
+})
+
+describe('activateWorkspaceRepoEntry', () => {
+  it('qualifies activation with the host the adoption stamped, not the one the owning host wrote', () => {
+    const adopted: FolderWorkspace = {
+      ...workspace([member('a', 'ready')]),
+      executionHostId: 'runtime:env-a'
+    }
+    activateWorkspaceRepoEntry('wt-a', adopted)
+    expect(activateAndRevealWorkspace).toHaveBeenLastCalledWith('wt-a', {
+      navigationIntent: 'user-open',
+      executionHostId: 'runtime:env-a'
+    })
+  })
+
+  it('falls back to the multi-repo host when the workspace carries no stamp', () => {
+    activateWorkspaceRepoEntry('wt-a', workspace([member('a', 'ready')]))
+    expect(activateAndRevealWorkspace).toHaveBeenLastCalledWith('wt-a', {
+      navigationIntent: 'user-open',
+      executionHostId: 'local'
+    })
   })
 })
