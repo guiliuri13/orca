@@ -236,6 +236,7 @@ export function createWebUiApi(): NonNullable<Partial<PreloadApi>['ui']> {
     onSelectWorkspaceRepo: () => noopUnsubscribe,
     onRequestTabCreate: () => noopUnsubscribe,
     replyTabCreate: () => {},
+    browserTabRequestsReady: () => {},
     onRequestRemoteCliBrowserScope: () => noopUnsubscribe,
     replyRemoteCliBrowserScope: () => {},
     onRequestTabSetProfile: () => noopUnsubscribe,

@@ -163,6 +163,7 @@ export const uiStateAndMenuCommandsApi = {
       sessionProfileId?: string | null
       sessionPartition?: string
       activate?: boolean
+      fallbackWorktreeId?: string
     }) => void
   ): (() => void) => {
     const listener = (
@@ -175,6 +176,7 @@ export const uiStateAndMenuCommandsApi = {
         sessionProfileId?: string | null
         sessionPartition?: string
         activate?: boolean
+        fallbackWorktreeId?: string
       }
     ) => callback(data)
     ipcRenderer.on('browser:requestTabCreate', listener)
@@ -182,6 +184,9 @@ export const uiStateAndMenuCommandsApi = {
   },
   replyTabCreate: (reply: { requestId: string; browserPageId?: string; error?: string }): void => {
     ipcRenderer.send('browser:tabCreateReply', reply)
+  },
+  browserTabRequestsReady: (): void => {
+    ipcRenderer.send('browser:tabRequestsReady')
   },
   onRequestRemoteCliBrowserScope: (
     callback: (data: RemoteCliBrowserScopeQuery) => void
