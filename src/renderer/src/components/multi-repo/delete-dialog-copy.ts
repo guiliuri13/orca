@@ -7,6 +7,12 @@ export function getDeleteTitle(name: string): string {
 }
 
 export function getDeleteBody(repoCount: number): string {
+  if (repoCount === 0) {
+    return translate(
+      'auto.components.multiRepo.delete.bodyEmpty',
+      'This removes the workspace record and its folder if it is empty.'
+    )
+  }
   return translate(
     'auto.components.multiRepo.delete.body',
     'This removes {{n}} worktrees and the workspace folder if it is empty. Branches that are fully merged are deleted; branches with unmerged commits are kept.',
@@ -36,6 +42,9 @@ export function getDeleteButtonLabel(
           'Delete and discard changes in {{n}} repos',
           { n: forcedCount }
         )
+  }
+  if (repoCount === 0) {
+    return translate('auto.components.multiRepo.delete.confirmEmpty', 'Delete workspace')
   }
   return translate(
     'auto.components.multiRepo.delete.confirm',

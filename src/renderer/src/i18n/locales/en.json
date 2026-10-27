@@ -19252,7 +19252,9 @@
           "folderKeptFailed": "Folder kept: it could not be removed ({{path}})",
           "confirm": "Delete workspace and {{count}} worktrees",
           "dirty": "{{count}} uncommitted files",
-          "unpublished": "{{count}} unpublished commits on {{branch}}"
+          "unpublished": "{{count}} unpublished commits on {{branch}}",
+          "bodyEmpty": "This removes the workspace record and its folder if it is empty.",
+          "confirmEmpty": "Delete workspace"
         },
         "memberDelete": {
           "keepsOne": "Only deletes {{name}}. The workspace keeps 1 repo.",

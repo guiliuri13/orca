@@ -190,7 +190,7 @@ export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | nu
   }
   const name = folderWorkspace?.name ?? folderWorkspaceId
   const checking = load.kind === 'checking'
-  const confirmDisabled = deleting || load.kind !== 'ready' || rows.length === 0
+  const confirmDisabled = deleting || load.kind !== 'ready'
   const cleanEnter = load.kind === 'ready' && enterConfirmsDelete(rows)
 
   return (
@@ -213,7 +213,11 @@ export default function DeleteMultiRepoWorkspaceDialog(): React.JSX.Element | nu
         <DialogHeader>
           <DialogTitle>{getDeleteTitle(name)}</DialogTitle>
           <DialogDescription>
-            {getDeleteBody(rows.length || (folderWorkspace?.multiRepo?.members.length ?? 0))}
+            {getDeleteBody(
+              load.kind === 'ready'
+                ? rows.length
+                : (folderWorkspace?.multiRepo?.members.length ?? 0)
+            )}
           </DialogDescription>
         </DialogHeader>
 

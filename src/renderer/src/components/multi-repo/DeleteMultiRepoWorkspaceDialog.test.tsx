@@ -127,6 +127,27 @@ describe('DeleteMultiRepoWorkspaceDialog', () => {
     })
   })
 
+  it('deletes a workspace whose inspection is ready with no members', async () => {
+    inspect.mockResolvedValue({ ...clean, members: [] })
+    remove.mockResolvedValue({
+      folderWorkspaceId: 'f1',
+      workspaceRemoved: true,
+      remainingMemberCount: 0,
+      members: []
+    })
+    render(<DeleteMultiRepoWorkspaceDialog />)
+    const confirm = await screen.findByRole('button', { name: 'Delete workspace' })
+    await waitFor(() => expect(confirm.hasAttribute('disabled')).toBe(false))
+    expect(
+      screen.getByText('This removes the workspace record and its folder if it is empty.')
+    ).toBeTruthy()
+    await act(async () => {
+      fireEvent.click(confirm)
+    })
+    await waitFor(() => expect(closeModal).toHaveBeenCalled())
+    expect(remove).toHaveBeenCalledWith({ folderWorkspaceId: 'f1', executionHostId: 'local' })
+  })
+
   it('names the repos at risk, sends force only for ticked ones, and counts them in the label', async () => {
     inspect.mockResolvedValue({
       ...clean,
