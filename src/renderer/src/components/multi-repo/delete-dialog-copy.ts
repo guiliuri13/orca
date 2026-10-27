@@ -15,8 +15,8 @@ export function getDeleteBody(repoCount: number): string {
   }
   return translate(
     'auto.components.multiRepo.delete.body',
-    'This removes {{n}} worktrees and the workspace folder if it is empty. Branches that are fully merged are deleted; branches with unmerged commits are kept.',
-    { n: repoCount }
+    'This removes {{count}} worktrees and the workspace folder if it is empty. Branches that are fully merged are deleted; branches with unmerged commits are kept.',
+    { count: repoCount }
   )
 }
 
