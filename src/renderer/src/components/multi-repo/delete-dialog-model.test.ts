@@ -61,10 +61,10 @@ describe('buildDeleteRows', () => {
     const rows = buildDeleteRows(inspection, labels)
     expect(rows.map((row) => [row.label, row.risky, row.dirtyCount])).toEqual([
       ['web', true, 3],
-      ['api', false, 0],
-      ['repo-c', false, null]
+      ['repo-c', true, null],
+      ['api', false, 0]
     ])
-    expect(rows[2].branchKept).toBeNull()
+    expect(rows[1].branchKept).toBeNull()
   })
 
   it('lets Enter confirm only a workspace with nothing at risk', () => {
@@ -103,8 +103,8 @@ describe('applyDeleteResult', () => {
       rows.map((row) => [row.label, row.phase, row.failureMessage, row.preservedBranch])
     ).toEqual([
       ['web', 'failed', 'has uncommitted changes', null],
-      ['api', 'removed', null, null],
-      ['repo-c', 'removed', null, 'flow']
+      ['repo-c', 'removed', null, 'flow'],
+      ['api', 'removed', null, null]
     ])
     expect(countFailed(rows)).toBe(1)
     expect(countRemaining(rows)).toBe(1)

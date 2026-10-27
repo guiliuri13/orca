@@ -46,7 +46,10 @@ function toRow(member: MultiRepoDeleteMemberInspection, labels: DeleteMemberLabe
     branchName: known?.branchName ?? '',
     dirtyCount: member.dirtyCount,
     unpublishedCommitCount: member.unpublishedCommitCount,
-    risky: (member.dirtyCount ?? 0) > 0 || (member.unpublishedCommitCount ?? 0) > 0,
+    risky:
+      member.dirtyCount === null ||
+      member.dirtyCount > 0 ||
+      (member.unpublishedCommitCount ?? 0) > 0,
     worktreeGone: !member.worktreeExists,
     branchKept: member.willKeepBranch,
     phase: 'idle',
