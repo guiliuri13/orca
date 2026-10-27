@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
+import type { MultiRepoWorkspace } from '../../../shared/multi-repo-workspace'
 import { resolveMultiRepoExecutionHostId } from './multi-repo-execution-host'
 
-const multiRepo = {
+const multiRepo: MultiRepoWorkspace = {
   version: 1,
   executionHostId: 'local',
   rootOwnedByOrca: true,
   members: []
-} as const
+}
 
 describe('resolveMultiRepoExecutionHostId', () => {
   it('prefers the host adoption stamped on the workspace', () => {
