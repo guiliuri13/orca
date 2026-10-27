@@ -39,6 +39,8 @@ export type UseMultiRepoComposerInput = {
   onPrimaryProjectChange: (projectId: string) => void
   onProjectHostSetupChange?: (setupId: string) => void
   onCreated: () => void
+  /** True once the user dismissed the dialog; the created workspace then stays in the background. */
+  isSubmissionCancelled?: () => boolean
 }
 
 export type MultiRepoComposerView = ReturnType<typeof useMultiRepoComposer>
@@ -52,7 +54,8 @@ export function useMultiRepoComposer({
   quickAgent,
   onPrimaryProjectChange,
   onProjectHostSetupChange,
-  onCreated
+  onCreated,
+  isSubmissionCancelled
 }: UseMultiRepoComposerInput) {
   const { projects, setups } = useProjectHostSetupProjection()
   const createMultiRepoWorkspace = useAppStore((state) => state.createMultiRepoWorkspace)
@@ -197,6 +200,9 @@ export function useMultiRepoComposer({
         ...(quickAgent ? { createdWithAgent: quickAgent } : {})
       })
       saveLastMultiRepoSet(recordCreateInLastSet(lastSet, selectedProjectIds))
+      if (isSubmissionCancelled?.()) {
+        return
+      }
       activateAndRevealWorkspace(folderWorkspaceKey(folderWorkspace.id), {
         navigationIntent: 'user-open'
       })
@@ -223,6 +229,7 @@ export function useMultiRepoComposer({
     blockedCount,
     createMultiRepoWorkspace,
     hostId,
+    isSubmissionCancelled,
     lastSet,
     name,
     onCreated,

@@ -226,7 +226,8 @@ function QuickTabBody({
     quickAgent,
     onPrimaryProjectChange: cardProps.onProjectChange,
     onProjectHostSetupChange: cardProps.onProjectHostSetupChange,
-    onCreated: onClose
+    onCreated: onClose,
+    isSubmissionCancelled
   })
   const createDisabled = multiRepo.active
     ? multiRepo.creating ||

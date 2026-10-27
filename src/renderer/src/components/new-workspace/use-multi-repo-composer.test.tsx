@@ -153,6 +153,20 @@ describe('useMultiRepoComposer', () => {
     expect(loadLastMultiRepoSet()).toEqual({ projectIds: ['api', 'web'], singleCreatesSince: 0 })
   })
 
+  it('keeps the remembered set but neither activates nor closes when the dialog was dismissed mid-create', async () => {
+    const onCreated = vi.fn()
+    create.mockResolvedValue({ id: 'folder-1' })
+    const { result } = renderHook(() =>
+      useMultiRepoComposer(input({ onCreated, isSubmissionCancelled: () => true }))
+    )
+    act(() => result.current.toggleProject('web'))
+    await act(() => result.current.submit())
+    expect(create).toHaveBeenCalledTimes(1)
+    expect(loadLastMultiRepoSet()).toEqual({ projectIds: ['api', 'web'], singleCreatesSince: 0 })
+    expect(mocks.activate).not.toHaveBeenCalled()
+    expect(onCreated).not.toHaveBeenCalled()
+  })
+
   it('shows a persistent mixed-hosts error and keeps the selection when the host refuses', async () => {
     create.mockRejectedValue(
       new MultiRepoWorkspaceError('multi_repo_mixed_hosts', 'All projects must live on this host.')
