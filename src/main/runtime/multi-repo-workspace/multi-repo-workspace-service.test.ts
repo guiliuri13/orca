@@ -232,6 +232,20 @@ describe('multi-repo delete', () => {
     expect(second.workspaceRemoved).toBe(true)
   })
 
+  it('finishes when a member never had a worktree, dropping it from the record', async () => {
+    const { service, port, workspaces, failingRepos } = createHarness(['a', 'b'])
+    failingRepos.add('b')
+    await service.create({ name: 'Partial', members: [{ repoId: 'a' }, { repoId: 'b' }] })
+    const settled = await settle(workspaces)
+
+    const result = await service.delete({ folderWorkspaceId: settled.id })
+
+    expect(result.members.map((outcome) => outcome.status)).toEqual(['removed', 'dropped'])
+    expect(result.workspaceRemoved).toBe(true)
+    expect(result.remainingMemberCount).toBe(0)
+    expect(port.deleteFolderWorkspace).toHaveBeenCalledWith(settled.id)
+  })
+
   it('removes the record last and keeps a non-empty root', async () => {
     const { service, port, workspaces } = createHarness(['a', 'b'])
     await service.create({ name: 'Keep', members: [{ repoId: 'a' }, { repoId: 'b' }] })
@@ -280,6 +294,31 @@ describe('multi-repo lock and mobile force', () => {
       MultiRepoWorkspaceError
     )
     expect(() => assertWorktreeNotMultiRepoMember(store, 'other::/x')).not.toThrow()
+  })
+
+  it('rejects a blank workspace name before creating the system group', async () => {
+    const { service, port } = createHarness(['a', 'b'])
+
+    await expect(
+      service.create({ name: '   ', members: [{ repoId: 'a' }, { repoId: 'b' }] })
+    ).rejects.toMatchObject({ code: 'multi_repo_root_unavailable' })
+    expect(port.createProjectGroup).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['forceMemberIds', { forceMemberIds: ['m'] }],
+    ['allowFailedArchiveHookMemberIds', { allowFailedArchiveHookMemberIds: ['m'] }],
+    ['runHooks false', { runHooks: false }]
+  ])('refuses %s from a paired phone', async (_label, overrides) => {
+    const method = MULTI_REPO_WORKSPACE_METHODS.find(
+      (entry) => entry.name === 'multiRepoWorkspace.delete'
+    )!
+    await expect(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only pairedDeviceId and the params are read before the refusal.
+      method.handler({ folderWorkspaceId: 'ws', ...overrides }, {
+        pairedDeviceId: 'phone'
+      } as never)
+    ).rejects.toMatchObject({ code: 'multi_repo_force_not_allowed' })
   })
 
   it('refuses force from a paired phone', async () => {

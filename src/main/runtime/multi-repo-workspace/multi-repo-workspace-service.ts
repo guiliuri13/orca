@@ -133,6 +133,15 @@ export class MultiRepoWorkspaceService {
         'Set an absolute workspace directory in Settings first.'
       )
     }
+    let defaultBranch: string
+    try {
+      defaultBranch = sanitizeWorktreeName(input.name)
+    } catch {
+      throw new MultiRepoWorkspaceError(
+        'multi_repo_root_unavailable',
+        'Choose a workspace name with letters or numbers.'
+      )
+    }
     const group = await ensureMultiRepoSystemGroup(this.port, workspaceDir)
     const rootPath = await allocateMultiRepoRoot(workspaceDir, input.name)
     let workspace: FolderWorkspace
@@ -150,7 +159,6 @@ export class MultiRepoWorkspaceService {
       throw error
     }
     const dirNames = allocateMemberDirNames(repos.map((repo) => repo.path))
-    const defaultBranch = sanitizeWorktreeName(input.name)
     const members: MultiRepoMember[] = input.members.map((requested, index) => ({
       memberId: randomUUID(),
       repoId: requested.repoId,

@@ -14,7 +14,7 @@ import { getStatus } from '../../git/status'
 import { gitExecFileAsync } from '../../git/runner'
 import { track } from '../../telemetry/client'
 import type { MultiRepoWorkspacePort } from './multi-repo-workspace-port'
-import { requireMultiRepoWorkspace } from './multi-repo-workspace-record'
+import { requireMultiRepoWorkspace, writeMultiRepoRecord } from './multi-repo-workspace-record'
 
 const DELETE_CONCURRENCY = 3
 
@@ -110,6 +110,15 @@ export async function deleteMultiRepoWorkspace(
       runHooks: request.runHooks !== false
     })
   )
+  const droppedIds = new Set(
+    outcomes.filter((outcome) => outcome.status === 'dropped').map((outcome) => outcome.memberId)
+  )
+  if (droppedIds.size > 0) {
+    writeMultiRepoRecord(store, request.folderWorkspaceId, (current) => ({
+      ...current,
+      members: current.members.filter((member) => !droppedIds.has(member.memberId))
+    }))
+  }
   port.notifyChanged()
   const remaining = requireMultiRepoWorkspace(store, request.folderWorkspaceId).multiRepo.members
   const finished = remaining.length === 0

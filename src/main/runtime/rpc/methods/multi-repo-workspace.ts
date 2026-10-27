@@ -77,11 +77,16 @@ export const MULTI_REPO_WORKSPACE_METHODS = [
     permission: 'workspace',
     params: MultiRepoWorkspaceDelete,
     handler: async (params, context) => {
-      // A phone can only delete clean members; discarding changes needs the desktop.
-      if (context.pairedDeviceId && (params.forceMemberIds?.length ?? 0) > 0) {
+      // A phone can only delete clean members; discarding changes or overriding archive hooks needs the desktop.
+      if (
+        context.pairedDeviceId &&
+        ((params.forceMemberIds?.length ?? 0) > 0 ||
+          (params.allowFailedArchiveHookMemberIds?.length ?? 0) > 0 ||
+          params.runHooks === false)
+      ) {
         throw new MultiRepoWorkspaceError(
           'multi_repo_force_not_allowed',
-          'Discarding changes needs the desktop app.'
+          'Discarding changes and overriding archive hooks needs the desktop app.'
         )
       }
       return getMultiRepoWorkspaceService(context.runtime).delete(params)
