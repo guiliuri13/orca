@@ -167,6 +167,33 @@ describe('useMultiRepoComposer', () => {
     expect(onCreated).not.toHaveBeenCalled()
   })
 
+  it('offers Use host only where the primary project has a ready Run on option', () => {
+    const onProjectHostSetupChange = vi.fn()
+    const { result } = renderHook(() =>
+      useMultiRepoComposer(
+        input({
+          onProjectHostSetupChange,
+          projectHostSetupOptions: [
+            {
+              id: 'api-runtime:a',
+              kind: 'ready',
+              projectId: 'api',
+              hostId: 'runtime:a',
+              repoId: 'repo-api',
+              label: 'Server',
+              detail: 'api',
+              path: '/srv/api'
+            }
+          ]
+        })
+      )
+    )
+    expect(result.current.canUseHost('runtime:a')).toBe(true)
+    expect(result.current.canUseHost('runtime:b')).toBe(false)
+    act(() => result.current.useHost('runtime:a'))
+    expect(onProjectHostSetupChange).toHaveBeenCalledWith('api-runtime:a')
+  })
+
   it('shows a persistent mixed-hosts error and keeps the selection when the host refuses', async () => {
     create.mockRejectedValue(
       new MultiRepoWorkspaceError('multi_repo_mixed_hosts', 'All projects must live on this host.')

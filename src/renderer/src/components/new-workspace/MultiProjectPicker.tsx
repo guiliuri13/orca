@@ -30,6 +30,8 @@ type MultiProjectPickerProps = {
   onToggleProject: (projectId: string) => void
   /** Switches the workspace host; only offered when a project has exactly one alternative host. */
   onUseHost: (hostId: ExecutionHostId) => void
+  /** False when the primary project has no ready setup there, so the action would do nothing. */
+  canUseHost: (hostId: ExecutionHostId) => boolean
   getHostLabel: (hostId: ExecutionHostId) => string
   onAddProject: () => void
   triggerRef?: React.Ref<HTMLButtonElement>
@@ -53,6 +55,7 @@ export default function MultiProjectPicker({
   selectedProjectIds,
   onToggleProject,
   onUseHost,
+  canUseHost,
   getHostLabel,
   onAddProject,
   triggerRef,
@@ -112,7 +115,7 @@ export default function MultiProjectPicker({
                 className="mt-0.5 whitespace-normal text-[10px] text-muted-foreground"
               >
                 {getMultiRepoUnavailableCopy(reason, hostLabel)}
-                {row.alternativeHostId ? (
+                {row.alternativeHostId && canUseHost(row.alternativeHostId) ? (
                   <button
                     type="button"
                     className="ml-1.5 underline underline-offset-2 hover:text-foreground"

@@ -148,17 +148,29 @@ export function useMultiRepoComposer({
     setSetupOverrides((current) => ({ ...current, [projectId]: setupId }))
   }, [])
 
-  const useHost = useCallback(
-    (nextHostId: ExecutionHostId): void => {
-      const option = projectHostSetupOptions.find(
+  const readyOptionForHost = useCallback(
+    (nextHostId: ExecutionHostId): ReadyProjectHostOption | undefined =>
+      projectHostSetupOptions.find(
         (candidate): candidate is ReadyProjectHostOption =>
           candidate.kind === 'ready' && candidate.hostId === nextHostId
-      )
+      ),
+    [projectHostSetupOptions]
+  )
+
+  // Run on lists the primary project's setups, so switching only works where it has a ready one.
+  const canUseHost = useCallback(
+    (nextHostId: ExecutionHostId): boolean => readyOptionForHost(nextHostId) !== undefined,
+    [readyOptionForHost]
+  )
+
+  const useHost = useCallback(
+    (nextHostId: ExecutionHostId): void => {
+      const option = readyOptionForHost(nextHostId)
       if (option) {
         onProjectHostSetupChange?.(option.id)
       }
     },
-    [onProjectHostSetupChange, projectHostSetupOptions]
+    [onProjectHostSetupChange, readyOptionForHost]
   )
 
   const applySameAsLast = useCallback((): void => {
@@ -286,6 +298,7 @@ export function useMultiRepoComposer({
     removeProject,
     chooseSetup,
     useHost,
+    canUseHost,
     applySameAsLast,
     submit
   }

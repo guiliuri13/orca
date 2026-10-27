@@ -163,6 +163,7 @@ export function NewWorkspaceComposerProjectSection({
                   selectedProjectIds={multiRepo.selectedProjectIds}
                   onToggleProject={multiRepo.toggleProject}
                   onUseHost={multiRepo.useHost}
+                  canUseHost={multiRepo.canUseHost}
                   getHostLabel={getExecutionHostLabel}
                   onAddProject={onAddProject}
                   disabled={multiRepo.supported === false || multiRepo.creating}
