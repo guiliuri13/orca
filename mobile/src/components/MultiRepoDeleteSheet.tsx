@@ -52,7 +52,12 @@ export function MultiRepoDeleteSheet({
   const requestIdRef = useRef(0)
 
   const inspect = useCallback(async () => {
-    if (!client || !folderWorkspaceId) {
+    if (!folderWorkspaceId) {
+      return
+    }
+    if (!client) {
+      requestIdRef.current += 1
+      setPhase({ kind: 'error', message: 'This host is not available for workspace deletion' })
       return
     }
     const requestId = ++requestIdRef.current
