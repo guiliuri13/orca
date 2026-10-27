@@ -3,6 +3,7 @@ import { AlertTriangle, CircleDashed, LoaderCircle, RotateCw } from 'lucide-reac
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
+import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
 import { translate } from '@/i18n/i18n'
 import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
 import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
@@ -49,7 +50,7 @@ export default function MultiRepoAttentionRows({
   if (rows.length === 0) {
     return null
   }
-  const executionHostId = folderWorkspace.multiRepo?.executionHostId
+  const executionHostId = resolveMultiRepoExecutionHostId(folderWorkspace)
   const retry = async (memberId: string): Promise<void> => {
     setPending((current) => new Set(current).add(memberId))
     try {

@@ -90,4 +90,32 @@ describe('MultiRepoWorkspaceRootPanel', () => {
       executionHostId: 'local'
     })
   })
+
+  it('retries against the host adoption stamped on a remote runtime workspace', async () => {
+    runMemberAction.mockResolvedValue(undefined)
+    const ws = {
+      ...workspace([
+        {
+          memberId: 'a',
+          repoId: 'repo-a',
+          dirName: 'api',
+          branchName: 'flow',
+          state: 'failed' as const,
+          attempts: 1,
+          failure: { code: 'git_failed' as const, message: 'fetch failed', at: 1 }
+        }
+      ]),
+      executionHostId: 'runtime:env-a' as const
+    }
+    useAppStore.setState({ folderWorkspaces: [ws] })
+    render(<MultiRepoWorkspaceRootPanel folderWorkspace={ws} />)
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    })
+    expect(runMemberAction).toHaveBeenCalledWith('retryMember', {
+      folderWorkspaceId: 'f1',
+      memberId: 'a',
+      executionHostId: 'runtime:env-a'
+    })
+  })
 })

@@ -93,6 +93,26 @@ describe('MultiRepoAttentionRows', () => {
     })
   })
 
+  it('retries against the host adoption stamped on a remote runtime workspace', async () => {
+    runMemberAction.mockResolvedValue(undefined)
+    render(
+      <MultiRepoAttentionRows
+        folderWorkspace={{
+          ...workspace([member('a', { state: 'interrupted', worktreeId: undefined })]),
+          executionHostId: 'runtime:env-a'
+        }}
+      />
+    )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Retry api' }))
+    })
+    expect(runMemberAction).toHaveBeenCalledWith('retryMember', {
+      folderWorkspaceId: 'f1',
+      memberId: 'a',
+      executionHostId: 'runtime:env-a'
+    })
+  })
+
   it('offers Retry for an interrupted repo', () => {
     render(
       <MultiRepoAttentionRows

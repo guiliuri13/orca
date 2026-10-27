@@ -3,6 +3,7 @@ import { Unlink } from 'lucide-react'
 import { toast } from 'sonner'
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '@/store'
+import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
 import { translate } from '@/i18n/i18n'
 import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
 import type { FolderWorkspace } from '../../../../shared/folder-workspace-types'
@@ -68,7 +69,7 @@ export function RemoveFromWorkspaceMenuItem({
     return null
   }
   const { workspace, member } = found
-  const executionHostId = workspace.multiRepo?.executionHostId
+  const executionHostId = resolveMultiRepoExecutionHostId(workspace)
   const args = {
     folderWorkspaceId: workspace.id,
     memberId: member.memberId,

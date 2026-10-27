@@ -108,6 +108,29 @@ describe('RemoveFromWorkspaceMenuItem', () => {
     })
   })
 
+  it('removes and undoes against the host adoption stamped on a remote runtime workspace', async () => {
+    runMemberAction.mockResolvedValue(workspace)
+    useAppStore.setState({ folderWorkspaces: [{ ...workspace, executionHostId: 'runtime:env-a' }] })
+    renderMenu('wt-b')
+    await act(async () => {
+      fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove from workspace' }))
+    })
+    await waitFor(() => expect(toast).toHaveBeenCalled())
+    expect(runMemberAction).toHaveBeenCalledWith('detachMember', {
+      folderWorkspaceId: 'f1',
+      memberId: 'b',
+      executionHostId: 'runtime:env-a'
+    })
+    await act(async () => {
+      toast.mock.calls[0][1].action.onClick()
+    })
+    expect(runMemberAction).toHaveBeenLastCalledWith('attachMember', {
+      folderWorkspaceId: 'f1',
+      memberId: 'b',
+      executionHostId: 'runtime:env-a'
+    })
+  })
+
   it('is absent for a worktree that is not a member', () => {
     renderMenu('wt-other')
     expect(screen.queryByRole('menuitem')).toBeNull()

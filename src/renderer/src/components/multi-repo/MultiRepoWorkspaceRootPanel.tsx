@@ -3,6 +3,7 @@ import { AlertTriangle, Check, CircleDashed, FolderX, LoaderCircle, RotateCw } f
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
+import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
 import { translate } from '@/i18n/i18n'
 import { activateWorkspaceRepoEntry } from '@/lib/multi-repo-workspace-repo-navigation'
 import { selectWorktreesByRepo } from '@/store/workspace-record-selectors'
@@ -55,7 +56,7 @@ export default function MultiRepoWorkspaceRootPanel({
     () => buildRootPanelModel({ folderWorkspace, repos, worktreesByRepo, gitStatusByWorktree }),
     [folderWorkspace, repos, worktreesByRepo, gitStatusByWorktree]
   )
-  const executionHostId = folderWorkspace.multiRepo?.executionHostId
+  const executionHostId = resolveMultiRepoExecutionHostId(folderWorkspace)
 
   const runAction = React.useCallback(
     async (action: MultiRepoMemberAction, memberId: string): Promise<void> => {

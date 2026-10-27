@@ -5,6 +5,7 @@ import { useAppStore } from '@/store'
 import type { AppState } from '@/store/types'
 import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
 import { activateAndRevealWorkspace } from '@/lib/worktree-activation'
+import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
 
 type RepoNavigationState = Pick<AppState, 'folderWorkspaces' | 'activeWorktreeId'>
 
@@ -52,10 +53,7 @@ export function activateWorkspaceRepoEntry(
   workspaceKey: string,
   folderWorkspace: FolderWorkspace
 ): void {
-  // Adoption stamps the runtime host on the folder workspace; multiRepo.executionHostId keeps the
-  // id the owning host wrote about itself ('local'), which activation cannot qualify against.
-  const executionHostId =
-    folderWorkspace.executionHostId ?? folderWorkspace.multiRepo?.executionHostId
+  const executionHostId = resolveMultiRepoExecutionHostId(folderWorkspace)
   activateAndRevealWorkspace(workspaceKey, {
     navigationIntent: 'user-open',
     ...(executionHostId ? { executionHostId } : {})
