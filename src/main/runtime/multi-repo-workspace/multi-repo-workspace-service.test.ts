@@ -274,6 +274,26 @@ describe('multi-repo delete', () => {
     expect(existsSync(join(settled.folderPath, 'notes.md'))).toBe(true)
   })
 
+  it('never removes a root that sits outside the workspace directory', async () => {
+    const { service, workspaces, failingRepos } = createHarness(['a', 'b'])
+    failingRepos.add('a')
+    failingRepos.add('b')
+    await service.create({ name: 'Moved', members: [{ repoId: 'a' }, { repoId: 'b' }] })
+    const settled = await settle(workspaces)
+    const outside = await mkdtemp(join(tmpdir(), 'multi-repo-outside-'))
+    try {
+      settled.folderPath = outside
+
+      const result = await service.delete({ folderWorkspaceId: settled.id })
+
+      expect(result.workspaceRemoved).toBe(true)
+      expect(result.rootKept).toEqual({ path: outside, reason: 'not_owned' })
+      expect(existsSync(outside)).toBe(true)
+    } finally {
+      await rm(outside, { recursive: true, force: true })
+    }
+  })
+
   it('rejects force for a member that is not part of the workspace', async () => {
     const { service, workspaces } = createHarness(['a', 'b'])
     await service.create({ name: 'Force', members: [{ repoId: 'a' }, { repoId: 'b' }] })

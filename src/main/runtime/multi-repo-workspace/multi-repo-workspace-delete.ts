@@ -1,4 +1,5 @@
 import { access, rmdir } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import type { FolderWorkspace } from '../../../shared/folder-workspace-types'
 import {
   MultiRepoWorkspaceError,
@@ -10,6 +11,7 @@ import {
 } from '../../../shared/multi-repo-workspace'
 import { bucketMultiRepoMemberCount } from '../../../shared/telemetry-multi-repo-workspace-event-schemas'
 import { splitWorktreeId } from '../../../shared/worktree/id'
+import { ensurePathWithinWorkspace } from '../../ipc/worktree-logic'
 import { getStatus } from '../../git/status'
 import { gitExecFileAsync } from '../../git/runner'
 import { track } from '../../telemetry/client'
@@ -175,7 +177,12 @@ async function removeWorkspaceRecordAndRoot(
   workspace: FolderWorkspace & { multiRepo: { rootOwnedByOrca: boolean } }
 ): Promise<MultiRepoDeleteResult['rootKept']> {
   await port.deleteFolderWorkspace(workspace.id)
-  if (!workspace.multiRepo.rootOwnedByOrca) {
+  if (
+    !workspace.multiRepo.rootOwnedByOrca ||
+    !ownerAnchors(port, workspace).some((anchor) =>
+      isStrictlyInsideWorkspaceDir(workspace.folderPath, anchor)
+    )
+  ) {
     return { path: workspace.folderPath, reason: 'not_owned' }
   }
   try {
@@ -190,6 +197,24 @@ async function removeWorkspaceRecordAndRoot(
       'code' in error &&
       (error.code === 'ENOTEMPTY' || error.code === 'EEXIST')
     return { path: workspace.folderPath, reason: notEmpty ? 'not_empty' : 'remove_failed' }
+  }
+}
+
+/** The group parentPath records the workspaceDir at creation time, which may differ from the current setting. */
+function ownerAnchors(port: MultiRepoWorkspacePort, workspace: FolderWorkspace): string[] {
+  const store = port.requireStore()
+  const groupParent = store
+    .getProjectGroups?.()
+    .find((group) => group.id === workspace.projectGroupId)?.parentPath
+  return [store.getSettings().workspaceDir, ...(groupParent ? [groupParent] : [])]
+}
+
+/** Defense in depth: never rmdir the workspace directory itself or anything outside it. */
+function isStrictlyInsideWorkspaceDir(rootPath: string, workspaceDir: string): boolean {
+  try {
+    return ensurePathWithinWorkspace(rootPath, workspaceDir) !== resolve(workspaceDir)
+  } catch {
+    return false
   }
 }
 

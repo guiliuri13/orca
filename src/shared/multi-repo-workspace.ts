@@ -1,4 +1,9 @@
-import { parseExecutionHostId, type ExecutionHostId } from './execution-host'
+import {
+  LOCAL_EXECUTION_HOST_ID,
+  parseExecutionHostId,
+  type ExecutionHostId
+} from './execution-host'
+import { getWorktreePathBasenameFromId, splitWorktreeIdForFilesystem } from './worktree/id'
 
 export const MULTI_REPO_WORKSPACE_MIN_MEMBERS = 2
 export const MULTI_REPO_WORKSPACE_MAX_MEMBERS = 12
@@ -148,6 +153,8 @@ function nonEmptyString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null
 }
 
+const SALVAGED_MEMBER_ID_PREFIX = 'salvaged:'
+
 function isMemberState(value: unknown): value is MultiRepoMemberState {
   return MULTI_REPO_MEMBER_STATES.some((state) => state === value)
 }
@@ -156,20 +163,35 @@ function isFailureCode(value: unknown): value is MultiRepoMemberFailureCode {
   return MULTI_REPO_MEMBER_FAILURE_CODES.some((code) => code === value)
 }
 
+/** A member that owns a worktree is never dropped: missing fields are derived from the worktree id and the member is marked interrupted so Retry can adopt it and delete can remove it. */
 function normalizeMember(raw: unknown): MultiRepoMember | null {
   if (!isRecord(raw)) {
     return null
   }
-  const memberId = nonEmptyString(raw.memberId)
-  const repoId = nonEmptyString(raw.repoId)
-  const dirName = nonEmptyString(raw.dirName)
-  const branchName = nonEmptyString(raw.branchName)
-  if (!memberId || !repoId || !dirName || !branchName || !isMemberState(raw.state)) {
+  const worktreeId = nonEmptyString(raw.worktreeId)
+  const parsedWorktree = worktreeId ? splitWorktreeIdForFilesystem(worktreeId) : null
+  const dirName =
+    nonEmptyString(raw.dirName) ?? (worktreeId ? getWorktreePathBasenameFromId(worktreeId) : null)
+  const memberId =
+    nonEmptyString(raw.memberId) ??
+    (worktreeId ? `${SALVAGED_MEMBER_ID_PREFIX}${worktreeId}` : null)
+  const repoId = nonEmptyString(raw.repoId) ?? nonEmptyString(parsedWorktree?.repoId) ?? worktreeId
+  const branchName = nonEmptyString(raw.branchName) ?? dirName
+  if (!memberId || !repoId || !dirName || !branchName) {
     return null
   }
-  const worktreeId = nonEmptyString(raw.worktreeId)
-  // A ready member without a worktree cannot be adopted or removed; treat it as interrupted so Retry can adopt.
-  const state = raw.state === 'ready' && !worktreeId ? 'interrupted' : raw.state
+  const validState = isMemberState(raw.state) ? raw.state : null
+  if (!validState && !worktreeId) {
+    return null
+  }
+  const derived =
+    !nonEmptyString(raw.memberId) ||
+    !nonEmptyString(raw.repoId) ||
+    !nonEmptyString(raw.dirName) ||
+    !nonEmptyString(raw.branchName)
+  // Derived identity or a ready member without a worktree cannot be trusted as-is; interrupted lets Retry adopt it.
+  const state =
+    !validState || derived || (validState === 'ready' && !worktreeId) ? 'interrupted' : validState
   const baseRef = nonEmptyString(raw.baseRef)
   const branchExplicit = raw.branchExplicit === true
   const worktreeInstanceId = nonEmptyString(raw.worktreeInstanceId)
@@ -206,34 +228,51 @@ function normalizeMember(raw: unknown): MultiRepoMember | null {
   }
 }
 
-/** Garbage returns `undefined` so the workspace survives as a plain folder workspace. */
+function hasWorktreeOwner(rawMembers: unknown): boolean {
+  return (
+    Array.isArray(rawMembers) &&
+    rawMembers.some((member) => isRecord(member) && nonEmptyString(member.worktreeId) !== null)
+  )
+}
+
+/** Garbage returns `undefined` so the workspace survives as a plain folder workspace, unless it still lists worktrees: those are salvaged so delete cannot orphan them. */
 export function normalizeMultiRepoWorkspace(value: unknown): MultiRepoWorkspace | undefined {
-  if (!isRecord(value) || value.version !== 1) {
+  if (!isRecord(value)) {
     return undefined
   }
-  const executionHostId = parseExecutionHostId(
+  const ownsWorktrees = hasWorktreeOwner(value.members) || hasWorktreeOwner(value.detachedMembers)
+  const hostId = parseExecutionHostId(
     typeof value.executionHostId === 'string' ? value.executionHostId : null
   )?.id
-  if (!executionHostId || !Array.isArray(value.members)) {
+  const validOuter = value.version === 1 && hostId !== undefined && Array.isArray(value.members)
+  if (!validOuter && !ownsWorktrees) {
     return undefined
   }
-  const seenMembers = new Set<string>()
-  const normalizeMembers = (rawMembers: readonly unknown[]): MultiRepoMember[] => {
+  const executionHostId = hostId ?? LOCAL_EXECUTION_HOST_ID
+  const seenMembers = new Map<string, string | undefined>()
+  const normalizeMembers = (rawMembers: unknown): MultiRepoMember[] => {
     const normalized: MultiRepoMember[] = []
-    for (const rawMember of rawMembers) {
-      const member = normalizeMember(rawMember)
-      if (!member || seenMembers.has(member.memberId)) {
+    for (const rawMember of Array.isArray(rawMembers) ? rawMembers : []) {
+      let member = normalizeMember(rawMember)
+      if (!member) {
         continue
       }
-      seenMembers.add(member.memberId)
+      if (seenMembers.has(member.memberId)) {
+        if (!member.worktreeId || seenMembers.get(member.memberId) === member.worktreeId) {
+          continue
+        }
+        member = { ...member, memberId: `${SALVAGED_MEMBER_ID_PREFIX}${member.worktreeId}` }
+        if (seenMembers.has(member.memberId)) {
+          continue
+        }
+      }
+      seenMembers.set(member.memberId, member.worktreeId)
       normalized.push(member)
     }
     return normalized
   }
   const members = normalizeMembers(value.members)
-  const detachedMembers = Array.isArray(value.detachedMembers)
-    ? normalizeMembers(value.detachedMembers)
-    : []
+  const detachedMembers = normalizeMembers(value.detachedMembers)
   return {
     version: 1,
     executionHostId,

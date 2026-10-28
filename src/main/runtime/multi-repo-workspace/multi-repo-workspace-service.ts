@@ -236,7 +236,13 @@ export class MultiRepoWorkspaceService {
       }))
       this.port.notifyChanged()
       const adopted =
-        member.attempts > 0 ? await tryAdoptMultiRepoMember(this.port, workspace, member) : null
+        member.attempts > 0 || member.worktreeId
+          ? await tryAdoptMultiRepoMember(this.port, workspace, member)
+          : null
+      if (!adopted && member.worktreeId) {
+        // A member that already owns a worktree must never get a second one created over it.
+        throw new Error(`Could not adopt existing worktree ${member.worktreeId}`)
+      }
       if (adopted) {
         this.markReady(folderWorkspaceId, memberId, adopted)
       } else {
