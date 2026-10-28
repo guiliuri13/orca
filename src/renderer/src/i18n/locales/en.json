@@ -20704,7 +20704,9 @@
       "terminalSplitRight": "Split terminal right",
       "terminalSplitDown": "Split terminal down",
       "terminalSwitchInputSource": "Switch input source / language (native)",
-      "newAgentTab": "New {{agent}} tab"
+      "newAgentTab": "New {{agent}} tab",
+      "workspaceNextRepo": "Next Repo in Workspace",
+      "workspacePreviousRepo": "Previous Repo in Workspace"
     },
     "group": {
       "global": "Global",
