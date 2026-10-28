@@ -4,6 +4,11 @@ import type {
   MultiRepoWorkspace
 } from '../../../../../shared/multi-repo-workspace'
 import type { Repo } from '../../../../../shared/repo-types'
+import { resolveMultiRepoExecutionHostId } from '@/lib/multi-repo-execution-host'
+import {
+  composeWorktreeHostIdentity,
+  type HostScopedWorktreeKey
+} from '../../../../../shared/worktree/host-qualified-identity'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
 export type MultiRepoMemberAvailability = 'ok' | 'project_removed' | 'missing'
@@ -131,19 +136,23 @@ export function findMultiRepoMemberByWorktreeId(
   return null
 }
 
-/** Worktree ids that belong to a multi-repo workspace, for rows that must not be dragged or reparented. */
-export function collectMultiRepoMemberWorktreeIds(
+/**
+ * Host-scoped identities of worktrees that belong to a multi-repo workspace, for rows that must not
+ * be dragged or reparented. Scoped so a same-id worktree on another host is not caught.
+ */
+export function collectMultiRepoMemberIdentities(
   workspaces: readonly FolderWorkspace[]
-): ReadonlySet<string> {
-  const ids = new Set<string>()
+): ReadonlySet<HostScopedWorktreeKey> {
+  const identities = new Set<HostScopedWorktreeKey>()
   for (const workspace of workspaces) {
+    const hostId = resolveMultiRepoExecutionHostId(workspace)
     for (const member of workspace.multiRepo?.members ?? []) {
       if (member.worktreeId) {
-        ids.add(member.worktreeId)
+        identities.add(composeWorktreeHostIdentity(hostId, member.worktreeId))
       }
     }
   }
-  return ids
+  return identities
 }
 
 /** Derived lock: a worktree is locked iff a multi-repo member points at it. */

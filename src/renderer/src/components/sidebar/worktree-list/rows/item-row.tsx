@@ -4,7 +4,10 @@ import { cn } from '@/lib/utils'
 import type { AppState } from '@/store/types'
 import type { ExecutionHostId } from '../../../../../../shared/execution-host'
 import type { Worktree } from '../../../../../../shared/worktree/types'
-import { getWorktreeHostIdentity } from '../../../../../../shared/worktree/host-qualified-identity'
+import {
+  getWorktreeHostIdentity,
+  type HostScopedWorktreeKey
+} from '../../../../../../shared/worktree/host-qualified-identity'
 import { isActiveSidebarWorkspace } from '../../../../../../shared/sidebar-list/active-workspace'
 import WorktreeCard, { type ActiveSurfaceVariant } from '../../WorktreeCard'
 import { PINNED_GROUP_KEY } from '../../../../../../shared/sidebar-list/group-keys'
@@ -29,7 +32,7 @@ export type WorktreeItemRowContext = {
   groupBy: WorktreeGroupBy
   folderBackedProjectGroupIds: ReadonlySet<string>
   /** Children of a multi-repo workspace: always labelled by repo, never dragged out. */
-  multiRepoMemberWorktreeIds?: ReadonlySet<string>
+  multiRepoMemberIdentities?: ReadonlySet<HostScopedWorktreeKey>
   groupKeyByRowKey: ReadonlyMap<string, string>
   groupIndexByRowKey: ReadonlyMap<string, number>
   agentSendTargetWorktreeId: string | null
@@ -117,12 +120,12 @@ export function renderWorktreeItemRow(
   const lineageChildrenStyle = lineageChildren
     ? getLineageChildrenInlineStyle(LINEAGE_CHILDREN_INLINE_OFFSET)
     : undefined
-  const isMultiRepoMember = ctx.multiRepoMemberWorktreeIds?.has(itemRow.worktree.id) === true
+  const worktreeIdentity = getWorktreeHostIdentity(itemRow.worktree)
+  const isMultiRepoMember = ctx.multiRepoMemberIdentities?.has(worktreeIdentity) === true
   // A member cannot leave or be reordered inside its workspace, so it carries no drag identity.
   const worktreeDragGroupKey = isMultiRepoMember
     ? undefined
     : ctx.groupKeyByRowKey.get(itemRow.rowKey)
-  const worktreeIdentity = getWorktreeHostIdentity(itemRow.worktree)
   const isLineageDropTarget =
     ctx.worktreeDragState.draggingWorktreeId &&
     (ctx.worktreeDragState.lineageDropTargetId === itemRow.worktree.id ||

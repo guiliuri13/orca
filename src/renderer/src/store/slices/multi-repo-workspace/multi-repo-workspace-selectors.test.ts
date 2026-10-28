@@ -4,10 +4,14 @@ import type { Repo } from '../../../../../shared/repo-types'
 import type { Worktree } from '../../../../../shared/worktree/types'
 import type { FolderWorkspace } from '../../../../../shared/folder-workspace-types'
 import {
-  collectMultiRepoMemberWorktreeIds,
+  collectMultiRepoMemberIdentities,
   deriveMultiRepoMemberViews,
   summarizeMultiRepoWorkspace
 } from './multi-repo-workspace-selectors'
+import {
+  composeWorktreeHostIdentity,
+  getWorktreeHostIdentity
+} from '../../../../../shared/worktree/host-qualified-identity'
 import { parseMultiRepoWorkspaceError } from './multi-repo-workspace-transport'
 
 function member(overrides: Partial<MultiRepoMember> & { memberId: string }): MultiRepoMember {
@@ -98,9 +102,9 @@ describe('parseMultiRepoWorkspaceError', () => {
   })
 })
 
-describe('collectMultiRepoMemberWorktreeIds', () => {
-  it('collects only members that hold a worktree, across workspaces', () => {
-    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the collector reads only multiRepo.members.
+describe('collectMultiRepoMemberIdentities', () => {
+  it('collects only members that hold a worktree, scoped to the workspace host', () => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the collector reads only multiRepo.members and executionHostId.
     const workspaces = [
       workspace([
         member({ memberId: 'a' }),
@@ -109,6 +113,32 @@ describe('collectMultiRepoMemberWorktreeIds', () => {
       { multiRepo: undefined },
       workspace([member({ memberId: 'c' })])
     ] as unknown as FolderWorkspace[]
-    expect([...collectMultiRepoMemberWorktreeIds(workspaces)]).toEqual(['a::wt', 'c::wt'])
+    const identities = collectMultiRepoMemberIdentities(workspaces)
+    expect([...identities]).toEqual([
+      composeWorktreeHostIdentity('local', 'a::wt'),
+      composeWorktreeHostIdentity('local', 'c::wt')
+    ])
+  })
+
+  it('locks only the workspace host copy when another host has a worktree with the same id', () => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the collector reads only multiRepo.members and executionHostId.
+    const identities = collectMultiRepoMemberIdentities([
+      workspace([member({ memberId: 'a' })])
+    ] as unknown as FolderWorkspace[])
+    expect(identities.has(getWorktreeHostIdentity({ id: 'a::wt', hostId: 'local' }))).toBe(true)
+    expect(identities.has(getWorktreeHostIdentity({ id: 'a::wt', hostId: 'runtime:env-a' }))).toBe(
+      false
+    )
+  })
+
+  it('scopes a remote runtime workspace to the adopted host, not the one the host wrote', () => {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the collector reads only multiRepo.members and executionHostId.
+    const identities = collectMultiRepoMemberIdentities([
+      { ...workspace([member({ memberId: 'a' })]), executionHostId: 'runtime:env-a' }
+    ] as unknown as FolderWorkspace[])
+    expect(identities.has(getWorktreeHostIdentity({ id: 'a::wt', hostId: 'runtime:env-a' }))).toBe(
+      true
+    )
+    expect(identities.has(getWorktreeHostIdentity({ id: 'a::wt', hostId: 'local' }))).toBe(false)
   })
 })
