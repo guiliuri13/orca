@@ -17,7 +17,7 @@ import type { VirtualizedWorktreeViewportProps } from './viewport-props'
 import type { WorktreeVirtualRowContext } from '../rows/virtual-row-dispatch'
 import { selectFolderWorkspaces } from '@/store/workspace-record-selectors'
 import { collectMultiRepoMemberIdentities } from '@/store/slices/multi-repo-workspace/multi-repo-workspace-selectors'
-import { getRepoOwnerWorktreeVisibilityDefaults } from '../../../../store/worktree-visibility-defaults-by-host'
+import type { RepoHeaderProjectActions } from '../rows/repo-header-project-actions'
 
 import type { ProjectHeaderHostContext } from '../rows/project-header-host-context'
 
@@ -29,7 +29,7 @@ type BuildArgs = {
   virtualization: WorktreeListVirtualizer
   measureVirtualRowElement: (element: HTMLDivElement | null) => void
   settings: AppState['settings']
-  worktreeVisibilityDefaultsByHost: AppState['worktreeVisibilityDefaultsByHost']
+  projectActions: RepoHeaderProjectActions
   newCardStyle: boolean
   folderBackedProjectGroupIds: ReadonlySet<string>
   session: WorktreeDragSession
@@ -87,21 +87,7 @@ export function buildWorktreeVirtualRowContext(args: BuildArgs): WorktreeVirtual
       projectHeaderHostContexts: args.projectHeaderHostContexts,
       getCachedFolderWorkspacePathStatus: args.getCachedFolderWorkspacePathStatus,
       toggleGroupWithScrollAnchor: args.toggleGroupWithScrollAnchor,
-      projectActions: {
-        getWorktreeVisibilityDefaults: (repo) =>
-          getRepoOwnerWorktreeVisibilityDefaults(
-            repo,
-            args.settings,
-            args.worktreeVisibilityDefaultsByHost
-          ),
-        onOpenRepoSettings: props.handleOpenRepoSettings,
-        onOpenWorktreeVisibility: props.handleOpenWorktreeVisibility,
-        onCreateGroupFromRepo: props.handleCreateGroupFromRepo,
-        onMoveProjectToGroup: props.handleMoveProjectToGroup,
-        onRemoveProjectFromGroup: props.handleRemoveProjectFromGroup,
-        onRemoveProject: props.handleRemoveProject,
-        onCreateForRepo: props.handleCreateForRepo
-      },
+      projectActions: args.projectActions,
       onRenameProjectGroup: props.handleRenameProjectGroup,
       onDeleteProjectGroup: props.handleDeleteProjectGroup,
       onCreateFolderWorkspace: props.handleCreateFolderWorkspace,
@@ -131,6 +117,7 @@ export function buildWorktreeVirtualRowContext(args: BuildArgs): WorktreeVirtual
       getLineageToggleHandler: args.getLineageToggleHandler,
       onSelectionGesture: props.onSelectionGesture,
       onWorktreeCardClick: props.onWorktreeCardClick,
+      activateOnPress: !props.workspaceBoardOpen,
       onContextMenuSelect: props.onContextMenuSelect,
       onImmediateActivate: primaryActive.handleImmediateWorktreeRowActivate,
       onRowClickCapture: args.onRowClickCapture,
@@ -155,6 +142,7 @@ export function buildWorktreeVirtualRowContext(args: BuildArgs): WorktreeVirtual
       getCachedFolderWorkspacePathStatus: args.getCachedFolderWorkspacePathStatus,
       onSelectionGesture: props.onSelectionGesture,
       onContextMenuSelect: props.onContextMenuSelect,
+      activateOnPress: !props.workspaceBoardOpen,
       onImmediateActivate: primaryActive.handleImmediateWorktreeRowActivate,
       onRowClickCapture: args.onRowClickCapture,
       onRowPointerDown: args.onRowPointerDown

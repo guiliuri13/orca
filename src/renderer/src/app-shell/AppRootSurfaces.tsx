@@ -1,8 +1,9 @@
+import { useTranslation } from 'react-i18next'
 import { ModalBoundary, OverlayBoundary } from './app-root-surface-boundaries'
 import { OnboardingLanguageLoading } from '../components/onboarding/OnboardingLanguageLoading'
 import { useLanguageReadiness } from '../i18n/language-readiness'
 import { NotificationCardStack } from '../components/NotificationCardStack'
-import { Suspense } from 'react'
+import { memo, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { lazyWithRetry as lazy } from '@/lib/lazy-with-retry'
 import { translate } from '@/i18n/i18n'
@@ -22,6 +23,7 @@ import { WslMoveDialogHost } from '../components/wsl-move/WslMoveDialog'
 import { shouldRenderPetOverlay } from '../components/pet/pet-overlay-visibility'
 import { useAppStore } from '../store'
 import type { UpdateStatus } from '../../../shared/update-status-types'
+import { MultiRepoDeleteModalHost } from './MultiRepoDeleteModalHost'
 import { useLazyModalMounts } from './use-lazy-modal-mounts'
 import { usePreloadWorktreeJumpPalette, WorktreeJumpPalette } from './worktree-jump-palette-preload'
 import {
@@ -54,9 +56,6 @@ const AiVaultSessionHistoryDialog = lazy(
   () => import('../components/right-sidebar/AiVaultSessionHistoryDialog')
 )
 const DeleteWorktreeDialog = lazy(() => import('../components/sidebar/DeleteWorktreeDialog'))
-const DeleteMultiRepoWorkspaceDialog = lazy(
-  () => import('../components/multi-repo/DeleteMultiRepoWorkspaceDialog')
-)
 const PreservedBranchBatchReviewModal = lazy(
   () => import('../components/sidebar/PreservedBranchBatchReviewModal')
 )
@@ -111,12 +110,14 @@ function shouldMountUpdateCardForStatus(status: UpdateStatus): boolean {
   return true
 }
 
-/** Keep root overlays in stable sibling order; fetch gated chunks only when their surfaces can appear. */
-export function AppRootSurfaces(props: {
+/** Keep root overlays in stable sibling order; fetch gated chunks only when their surfaces can appear. Memoized so active-workspace App renders skip every root overlay. */
+export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
   floatingWorkspace: FloatingWorkspacePanelState
   onboardingGate: OnboardingGate
 }): React.JSX.Element {
   const { floatingWorkspace, onboardingGate } = props
+  // Memoized: subscribe so a language change still repaints its labels.
+  useTranslation()
   const languageReady = useLanguageReadiness((state) => state.ready)
   const { mountedLazyModalIds, shouldMountAddRepoDialog } = useLazyModalMounts()
   usePreloadWorktreeJumpPalette()
@@ -324,11 +325,7 @@ export function AppRootSurfaces(props: {
             <DeleteWorktreeDialog />
           </ModalBoundary>
         ) : null}
-        {activeModal === 'delete-multi-repo-workspace' ? (
-          <ModalBoundary boundaryId="modal.delete-multi-repo-workspace" resetKey>
-            <DeleteMultiRepoWorkspaceDialog />
-          </ModalBoundary>
-        ) : null}
+        <MultiRepoDeleteModalHost />
         {activeModal === 'preserved-branch-review' ? (
           <ModalBoundary boundaryId="modal.preserved-branch-review" resetKey>
             <PreservedBranchBatchReviewModal />
@@ -406,4 +403,4 @@ export function AppRootSurfaces(props: {
       </Suspense>
     </>
   )
-}
+})
