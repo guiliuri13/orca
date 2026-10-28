@@ -326,7 +326,8 @@ async function spawnLocalStartupAndSetupTerminals(args: {
   defaultTabs: CreateWorktreeResult['defaultTabs']
   createdWithAgent: CreateWorktreeArgs['createdWithAgent']
 }): Promise<StagedStartupResult> {
-  const { runtime, worktree, startup, setup, defaultTabs, createdWithAgent } = args
+  const { runtime, worktree, startup, defaultTabs, createdWithAgent } = args
+  let { setup } = args
   if (!startup || defaultTabs?.tabs.length) {
     return { didSpawnSetup: false }
   }
@@ -354,6 +355,7 @@ async function spawnLocalStartupAndSetupTerminals(args: {
       ...(sequenced.startupEnv ? { env: { ...startup.env, ...sequenced.startupEnv } } : {})
     }
     wrappedSetupCommandStr = sequenced.setupCommand
+    setup = { ...setup, envVars: { ...setup.envVars, ...sequenced.setupEnv } }
   }
 
   try {
@@ -402,7 +404,7 @@ async function spawnLocalStartupAndSetupTerminals(args: {
       await runtime.createTerminal(
         `id:${worktree.id}`,
         {
-          title: 'Setup',
+          title: runtime.getSetupTerminalTitle(),
           command: setupCommand,
           env: setup.envVars,
           activate: false,

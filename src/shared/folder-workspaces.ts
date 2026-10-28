@@ -8,6 +8,7 @@ import { normalizeWorkspaceCreatorProvenance } from './workspace-creator-provena
 import { getWorkspaceAttachments } from './workspace-attachments'
 import { normalizeMultiRepoWorkspace } from './multi-repo-workspace'
 import { isSmartTier } from './sidebar-list/sort-stamps'
+import { normalizeOrcadRetainedMarker } from './orcad-retained-marker'
 
 export function normalizeFolderWorkspaceName(
   name: string | null | undefined,
@@ -60,6 +61,7 @@ export function normalizeFolderWorkspaces(
     const linkedTaskSourceContext = normalizeStoredTaskSourceContext(raw.linkedTaskSourceContext)
     const creatorProvenance = normalizeWorkspaceCreatorProvenance(raw.creatorProvenance)
     const multiRepo = normalizeMultiRepoWorkspace(raw.multiRepo)
+    const orcadRetained = normalizeOrcadRetainedMarker(raw.orcadRetained)
     seen.add(raw.id)
     // Do not persist fetch-time executionHostId: it may name an unowned runtime authority and lacks a generation fence.
     // connectionId is the durable pin main projects from.
@@ -134,7 +136,8 @@ export function normalizeFolderWorkspaces(
       ...(Array.isArray(raw.externalConversations)
         ? { externalConversations: raw.externalConversations }
         : {}),
-      ...(multiRepo ? { multiRepo } : {})
+      ...(multiRepo ? { multiRepo } : {}),
+      ...(orcadRetained ? { orcadRetained } : {})
     })
   }
   return workspaces.sort(
